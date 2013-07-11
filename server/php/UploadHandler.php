@@ -759,6 +759,7 @@ class UploadHandler
     }
 
     protected function generate_response($content, $print_response = true) {
+        ob_clean();
         if ($print_response) {
             $json = json_encode($content);
             $redirect = isset($_REQUEST['redirect']) ?
