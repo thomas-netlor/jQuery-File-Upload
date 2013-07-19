@@ -1,6 +1,6 @@
 <?php
 /*
- * jQuery File Upload Plugin PHP Class 6.7
+ * jQuery File Upload Plugin PHP Class 6.8.1
  * https://github.com/blueimp/jQuery-File-Upload
  *
  * Copyright 2010, Sebastian Tschan
@@ -158,7 +158,7 @@ class UploadHandler
     }
 
     protected function get_full_url() {
-        $https = !empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off';
+        $https = !empty($_SERVER['HTTPS']) && strcasecmp($_SERVER['HTTPS'], 'on') === 0;
         return
             ($https ? 'https://' : 'http://').
             (!empty($_SERVER['REMOTE_USER']) ? $_SERVER['REMOTE_USER'].'@' : '').
@@ -223,15 +223,15 @@ class UploadHandler
     }
 
     protected function set_additional_file_properties($file) {
-        $file->delete_url = $this->options['script_url']
+        $file->deleteUrl = $this->options['script_url']
             .$this->get_query_separator($this->options['script_url'])
             .'file='.rawurlencode($file->name);
-        $file->delete_type = $this->options['delete_type'];
-        if ($file->delete_type !== 'DELETE') {
-            $file->delete_url .= '&_method=DELETE';
+        $file->deleteType = $this->options['delete_type'];
+        if ($file->deleteType !== 'DELETE') {
+            $file->deleteUrl .= '&_method=DELETE';
         }
         if ($this->options['access_control_allow_credentials']) {
-            $file->delete_with_credentials = true;
+            $file->deleteWithCredentials = true;
         }
     }
 
@@ -271,7 +271,7 @@ class UploadHandler
             foreach($this->options['image_versions'] as $version => $options) {
                 if (!empty($version)) {
                     if (is_file($this->get_upload_path($file_name, $version))) {
-                        $file->{$version.'_url'} = $this->get_download_url(
+                        $file->{$version.'Url'} = $this->get_download_url(
                             $file->name,
                             $version
                         );
@@ -652,7 +652,7 @@ class UploadHandler
         foreach($this->options['image_versions'] as $version => $options) {
             if ($this->create_scaled_image($file->name, $version, $options)) {
                 if (!empty($version)) {
-                    $file->{$version.'_url'} = $this->get_download_url(
+                    $file->{$version.'Url'} = $this->get_download_url(
                         $file->name,
                         $version
                     );
@@ -734,13 +734,13 @@ class UploadHandler
         $file_size = $this->get_file_size($file_path);
         $chunk_size = $this->options['readfile_chunk_size'];
         if ($chunk_size && $file_size > $chunk_size) {
-            $handle = fopen($file_path, 'rb'); 
-            while (!feof($handle)) { 
-                echo fread($handle, $chunk_size); 
-                ob_flush(); 
-                flush(); 
-            } 
-            fclose($handle); 
+            $handle = fopen($file_path, 'rb');
+            while (!feof($handle)) {
+                echo fread($handle, $chunk_size);
+                ob_flush();
+                flush();
+            }
+            fclose($handle);
             return $file_size;
         }
         return readfile($file_path);
@@ -833,14 +833,12 @@ class UploadHandler
             );
         }
         $file_path = $this->get_upload_path($file_name, $this->get_version_param());
+        // Prevent browsers from MIME-sniffing the content-type:
+        $this->header('X-Content-Type-Options: nosniff');
         if (!preg_match($this->options['inline_file_types'], $file_name)) {
-            $this->header('Content-Description: File Transfer');
             $this->header('Content-Type: application/octet-stream');
             $this->header('Content-Disposition: attachment; filename="'.$file_name.'"');
-            $this->header('Content-Transfer-Encoding: binary');
         } else {
-            // Prevent Internet Explorer from MIME-sniffing the content-type:
-            $this->header('X-Content-Type-Options: nosniff');
             $this->header('Content-Type: '.$this->get_file_type($file_path));
             $this->header('Content-Disposition: inline; filename="'.$file_name.'"');
         }
